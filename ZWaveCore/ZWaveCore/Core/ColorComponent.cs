@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ZWaveCore.Commands
+﻿namespace ZWaveCore.Core
 {
     public class ColorComponent
     {
