@@ -93,7 +93,7 @@ namespace ZWaveCore.Core
                     LogMessage($"Received: {message}");
 
                     // ignore ACK, no processing of ACK needed
-                    if (message == Message.ACK)
+                    if (message == Message.Acknowledge)
                         continue;
 
                     // is it a eventmessage from a node?
@@ -102,7 +102,7 @@ namespace ZWaveCore.Core
                         // yes, so add to eventqueue
                         _eventQueue.Add(message);
                         // send ACK to controller
-                        _transmitQueue.Add(Message.ACK);
+                        _transmitQueue.Add(Message.Acknowledge);
                         // we're done
                         continue;
                     }
@@ -113,7 +113,7 @@ namespace ZWaveCore.Core
                         // yes, so add to eventqueue
                         _eventQueue.Add(message);
                         // send ACK to controller
-                        _transmitQueue.Add(Message.ACK);
+                        _transmitQueue.Add(Message.Acknowledge);
                         // we're done
                         continue;
                     }
@@ -121,12 +121,12 @@ namespace ZWaveCore.Core
                     // not a event, so it's a response to a request
                     _responseQueue.Add(message);
                     // send ACK to controller
-                    _transmitQueue.Add(Message.ACK);
+                    _transmitQueue.Add(Message.Acknowledge);
                 }
                 catch (ChecksumException ex)
                 {
                     LogMessage($"Exception: {ex}");
-                    _transmitQueue.Add(Message.NAK);
+                    _transmitQueue.Add(Message.NegativeAcknowledge);
                 }
                 catch (UnknownFrameException ex)
                 {
@@ -259,9 +259,9 @@ namespace ZWaveCore.Core
 
                 if (result == null)
                     throw new TimeoutException();
-                if (result == Message.NAK)
+                if (result == Message.NegativeAcknowledge)
                     throw new NakResponseException();
-                if (result == Message.CAN)
+                if (result == Message.Cancel)
                     throw new CanResponseException();
                 if (result is NodeCommandCompleted && ((NodeCommandCompleted)result).TransmissionState != TransmissionState.CompleteOk)
                     throw new TransmissionException($"Transmission failure: {((NodeCommandCompleted)result).TransmissionState}.");

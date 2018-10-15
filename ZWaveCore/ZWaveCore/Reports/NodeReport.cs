@@ -1,7 +1,7 @@
 ﻿using System;
 using ZWaveCore.Core;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
     public class NodeReport 
     {

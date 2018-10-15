@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
+using ZWaveCore.Commands;
 using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
     public class MultiChannelAssociationReport : NodeReport
     {

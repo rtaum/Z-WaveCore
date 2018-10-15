@@ -24,10 +24,10 @@ namespace ZWaveConsole
                     var protocolInfo = await node.GetProtocolInfo();
                     var supportedClasses = await node.GetSupportedCommandClasses();
 
-                    var command = node.GetCommandClass<SensorMultiLevel>();
+                    var command = node.GetCommandClass<SwitchBinary>();
                     //var report = await command.Get();
                     //await command.Set(true);
-                    var report = await command.Get(SensorType.Temperature);
+                    var report = await command.Get();
                     var tempreture = report.Value;
                 }
             }

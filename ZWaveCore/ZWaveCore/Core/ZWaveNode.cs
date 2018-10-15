@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
 using ZWaveCore.Enums;
+using ZWaveCore.Reports;
 using Version = ZWaveCore.Commands.Version;
 
 namespace ZWaveCore.Core

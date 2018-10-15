@@ -3,6 +3,7 @@ using System.Linq;
 using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
+using ZWaveCore.Reports;
 
 namespace ZWaveCore.Commands
 {

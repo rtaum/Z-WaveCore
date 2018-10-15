@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using ZWaveCore.Core;
+using ZWaveCore.Enums;
+using ZWaveCore.Reports;
 
 namespace ZWaveCore.Commands
 {

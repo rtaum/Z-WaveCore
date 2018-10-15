@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Enums
 {
     public enum SensorType : byte
     {

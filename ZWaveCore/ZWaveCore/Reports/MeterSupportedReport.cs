@@ -4,7 +4,7 @@ using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
     public class MeterSupportedReport : NodeReport
     {

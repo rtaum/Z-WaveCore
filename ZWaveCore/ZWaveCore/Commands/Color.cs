@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ZWaveCore.Core;
 using ZWaveCore.Enums;
 using ZWaveCore.Extensions;
+using ZWaveCore.Reports;
 
 namespace ZWaveCore.Commands
 {

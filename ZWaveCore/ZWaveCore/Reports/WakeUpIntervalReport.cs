@@ -3,7 +3,7 @@ using System.Linq;
 using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
     public class WakeUpIntervalReport : NodeReport
     {

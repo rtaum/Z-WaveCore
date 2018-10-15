@@ -10,9 +10,9 @@ namespace ZWaveCore.Core
 {
     class Message : IEquatable<Message>
     {
-        public static readonly Message ACK = new Message(FrameHeader.Acknowledge);
-        public static readonly Message NAK = new Message(FrameHeader.NegativeAcknowledge);
-        public static readonly Message CAN = new Message(FrameHeader.Cancel);
+        public static readonly Message Acknowledge = new Message(FrameHeader.Acknowledge);
+        public static readonly Message NegativeAcknowledge = new Message(FrameHeader.NegativeAcknowledge);
+        public static readonly Message Cancel = new Message(FrameHeader.Cancel);
 
         public readonly FrameHeader Header;
         public readonly MessageType? Type;
@@ -83,11 +83,11 @@ namespace ZWaveCore.Core
             switch (header)
             {
                 case FrameHeader.Acknowledge:
-                    return Message.ACK;
+                    return Message.Acknowledge;
                 case FrameHeader.NegativeAcknowledge:
-                    return Message.NAK;
+                    return Message.NegativeAcknowledge;
                 case FrameHeader.Cancel:
-                    return Message.CAN;
+                    return Message.Cancel;
             }
 
             if (header == FrameHeader.StartOfFrame)

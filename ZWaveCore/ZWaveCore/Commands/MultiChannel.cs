@@ -8,6 +8,7 @@ using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 using ZWaveCore.Extensions;
+using ZWaveCore.Reports;
 
 namespace ZWaveCore.Commands
 {
@@ -165,10 +166,7 @@ namespace ZWaveCore.Commands
         protected virtual void OnChanged(ReportEventArgs<MultiChannelReport> e)
         {
             var handler = Changed;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
+            handler?.Invoke(this, e);
         }
     }
 }

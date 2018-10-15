@@ -2,25 +2,25 @@
 using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
-    public class SwitchBinaryReport : NodeReport
+    public class ColorReport : NodeReport
     {
-        public readonly bool Value;
+        public readonly ColorComponent Component;
 
-        internal SwitchBinaryReport(ZWaveNode node, byte[] payload) : base(node)
+        internal ColorReport(ZWaveNode node, byte[] payload) : base(node)
         {
             if (payload == null)
                 throw new ArgumentNullException(nameof(payload));
-            if (payload.Length < 1)
+            if (payload.Length < 2)
                 throw new ReponseFormatException($"The response was not in the expected format. {GetType().Name}: Payload: {BitConverter.ToString(payload)}");
 
-            Value = payload[0] == 0xFF;
+            Component = new ColorComponent(payload[0], payload[1]);
         }
 
         public override string ToString()
         {
-            return $"Value:{Value}";
+            return $"Component:{Component}";
         }
     }
 }

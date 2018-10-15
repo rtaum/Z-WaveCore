@@ -1,6 +1,6 @@
 ﻿using ZWaveCore.Core;
 
-namespace ZWaveCore.Commands
+namespace ZWaveCore.Reports
 {
     public class WakeUpReport : NodeReport
     {
