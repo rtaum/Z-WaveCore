@@ -2,7 +2,7 @@
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class NodeUpdate : Message
     {

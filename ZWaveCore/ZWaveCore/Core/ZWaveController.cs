@@ -10,7 +10,7 @@ namespace ZWaveCore.Core
 {
     public class ZWaveController
     {
-        private Task<NodeCollection> _getNodes;
+        private Task<ZWaveNodeCollection> _getNodes;
         private string _version;
         private uint? _homeID;
         private byte? _nodeID;
@@ -150,19 +150,19 @@ namespace ZWaveCore.Core
             return _nodeID.Value;
         }
 
-        public Task<NodeCollection> DiscoverNodes()
+        public Task<ZWaveNodeCollection> DiscoverNodes()
         {
             return DiscoverNodes(CancellationToken.None);
         }
 
-        public Task<NodeCollection> DiscoverNodes(CancellationToken cancellationToken)
+        public Task<ZWaveNodeCollection> DiscoverNodes(CancellationToken cancellationToken)
         {
             return _getNodes = Task.Run(async () =>
             {
                 var response = await Channel.Send(Function.DiscoveryNodes, cancellationToken);
                 var values = response.Skip(3).Take(29).ToArray();
 
-                var nodes = new NodeCollection();
+                var nodes = new ZWaveNodeCollection();
                 var bits = new BitArray(values);
                 for (byte i = 0; i < bits.Length; i++)
                 {
@@ -176,12 +176,12 @@ namespace ZWaveCore.Core
             });
         }
 
-        public Task<NodeCollection> GetNodes()
+        public Task<ZWaveNodeCollection> GetNodes()
         {
             return GetNodes(CancellationToken.None);
         }
 
-        public async Task<NodeCollection> GetNodes(CancellationToken cancellationToken)
+        public async Task<ZWaveNodeCollection> GetNodes(CancellationToken cancellationToken)
         {
             return await (_getNodes ?? (_getNodes = DiscoverNodes(cancellationToken)));
         }

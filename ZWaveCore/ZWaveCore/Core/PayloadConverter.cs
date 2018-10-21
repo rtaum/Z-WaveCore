@@ -87,7 +87,6 @@ namespace ZWaveCore.Core
             }
         }
 
-
         public static byte[] GetBytes(sbyte value)
         {
             return new byte[] { unchecked((byte)value) };

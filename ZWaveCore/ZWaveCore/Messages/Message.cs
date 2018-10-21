@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class Message : IEquatable<Message>
     {

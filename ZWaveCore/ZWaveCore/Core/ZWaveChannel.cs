@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
+using ZWaveCore.Messages;
 
 namespace ZWaveCore.Core
 {
@@ -44,6 +43,170 @@ namespace ZWaveCore.Core
         public ZWaveChannel(string portName)
              : this(new SerialPort(portName))
         {
+        }
+
+        public void Open()
+        {
+            Port.Open();
+
+            // create tasks, on open or re-open
+            _eventQueue = new BlockingCollection<Message>();
+            _transmitQueue = new BlockingCollection<Message>();
+            _responseQueue = new BlockingCollection<Message>();
+
+            _processEventsTask = new Task(() => ProcessQueue(_eventQueue, OnNodeMessageReceived));
+            _transmitTask = new Task(() => ProcessQueue(_transmitQueue, OnTransmit));
+            _portReadTask = new Task(() => ReadPort(Port));
+
+            // start tasks
+            _portReadTask.Start();
+            _processEventsTask.Start();
+            _transmitTask.Start();
+        }
+
+        public void Close()
+        {
+            Port.Close();
+
+            _eventQueue.CompleteAdding();
+            _responseQueue.CompleteAdding();
+            _transmitQueue.CompleteAdding();
+
+            _portReadTask.Wait();
+            _processEventsTask.Wait();
+            _transmitTask.Wait();
+        }
+
+        public Task<byte[]> Send(Function function, params byte[] payload)
+        {
+            return Send(function, CancellationToken.None, payload);
+        }
+
+        public Task<byte[]> Send(Function function, CancellationToken cancellationToken, params byte[] payload)
+        {
+            return Send(function, payload, (message) =>
+            {
+                return (message is ControllerFunctionCompleted && ((ControllerFunctionCompleted)message).Function == function);
+            }, cancellationToken);
+        }
+
+        public Task<byte[]> Send(Function function, byte[] payload, Func<byte[], bool> predicate)
+        {
+            return Send(function, payload, predicate, CancellationToken.None);
+        }
+
+        public Task<byte[]> Send(Function function, byte[] payload, Func<byte[], bool> predicate, CancellationToken cancellationToken)
+        {
+            return Send(function, payload, (message) =>
+            {
+                return (message is ControllerFunctionEvent) && predicate(((ControllerFunctionEvent)message).Payload);
+            }, cancellationToken);
+        }
+
+        public Task Send(byte nodeID, Command command)
+        {
+            return Send(nodeID, command, CancellationToken.None);
+        }
+
+        public Task Send(byte nodeID, Command command, CancellationToken cancellationToken)
+        {
+            if (nodeID == 0)
+                throw new ArgumentOutOfRangeException(nameof(nodeID), nodeID, "nodeID can not be 0");
+            if (command == null)
+                throw new ArgumentNullException(nameof(command));
+
+            return Exchange(async () =>
+            {
+                var request = new NodeCommand(nodeID, command);
+                _transmitQueue.Add(request);
+
+                await WaitForResponse((message) =>
+                {
+                    return (message is NodeCommandCompleted && ((NodeCommandCompleted)message).CallbackID == request.CallbackID);
+                }, cancellationToken).ConfigureAwait(false);
+
+                return null;
+            }, $"NodeID:{nodeID:D3}, Command:{command}", cancellationToken);
+        }
+
+        public Task<byte[]> Send(byte nodeID, Command command, byte responseCommandID)
+        {
+            return Send(nodeID, command, responseCommandID, CancellationToken.None);
+        }
+
+        public Task<byte[]> Send(byte nodeID, Command command, byte responseCommandID, CancellationToken cancellationToken)
+        {
+            return Send(nodeID, command, responseCommandID, null, cancellationToken);
+        }
+
+        public Task<byte[]> Send(byte nodeID, Command command, byte responseCommandID, Func<byte[], bool> payloadValidation)
+        {
+            return Send(nodeID, command, responseCommandID, payloadValidation, CancellationToken.None);
+        }
+
+        public Task<byte[]> Send(byte nodeID, Command command, byte responseCommandID, Func<byte[], bool> payloadValidation, CancellationToken cancellationToken)
+        {
+            if (nodeID == 0)
+                throw new ArgumentOutOfRangeException(nameof(nodeID), nodeID, "nodeID can not be 0");
+            if (command == null)
+                throw new ArgumentNullException(nameof(command));
+
+            return Exchange(async () =>
+            {
+                var completionSource = new TaskCompletionSource<Command>();
+
+                EventHandler<NodeEventArgs> onNodeEventReceived = (_, e) =>
+                {
+                    if (e.NodeID == nodeID && e.Command.ClassID == command.ClassID && e.Command.CommandID == responseCommandID)
+                    {
+                        if (payloadValidation == null || payloadValidation(e.Command.Payload))
+                        {
+                            // BugFix: 
+                            // http://stackoverflow.com/questions/19481964/calling-taskcompletionsource-setresult-in-a-non-blocking-manner
+                            Task.Run(() => completionSource.TrySetResult(e.Command));
+                        }
+                    }
+                };
+
+                var request = new NodeCommand(nodeID, command);
+                _transmitQueue.Add(request);
+
+                NodeEventReceived += onNodeEventReceived;
+                try
+                {
+                    await WaitForResponse((message) =>
+                    {
+                        return (message is NodeCommandCompleted && ((NodeCommandCompleted)message).CallbackID == request.CallbackID);
+                    }, cancellationToken).ConfigureAwait(false);
+
+                    try
+                    {
+                        using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                        {
+                            cancellationTokenSource.CancelAfter(ResponseTimeout);
+                            cancellationTokenSource.Token.Register(() => completionSource.TrySetCanceled(), useSynchronizationContext: false);
+
+                            var response = await completionSource.Task.ConfigureAwait(false);
+                            return response.Payload;
+                        }
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        // Rethrow only if the external cancellation token was canceled.
+                        //
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+
+                        throw new TimeoutException();
+                    }
+                }
+                finally
+                {
+                    NodeEventReceived -= onNodeEventReceived;
+                }
+            }, $"NodeID:{nodeID:D3}, Command:[{command}], Reponse:{responseCommandID}", cancellationToken);
         }
 
         protected virtual void OnError(ErrorEventArgs e)
@@ -275,38 +438,6 @@ namespace ZWaveCore.Core
             throw new TaskCanceledException();
         }
 
-        public void Open()
-        {
-            Port.Open();
-
-            // create tasks, on open or re-open
-            _eventQueue = new BlockingCollection<Message>();
-            _transmitQueue = new BlockingCollection<Message>();
-            _responseQueue = new BlockingCollection<Message>();
-
-            _processEventsTask = new Task(() => ProcessQueue(_eventQueue, OnNodeMessageReceived));
-            _transmitTask = new Task(() => ProcessQueue(_transmitQueue, OnTransmit));
-            _portReadTask = new Task(() => ReadPort(Port));
-
-            // start tasks
-            _portReadTask.Start();
-            _processEventsTask.Start();
-            _transmitTask.Start();
-        }
-
-        public void Close()
-        {
-            Port.Close();
-
-            _eventQueue.CompleteAdding();
-            _responseQueue.CompleteAdding();
-            _transmitQueue.CompleteAdding();
-
-            _portReadTask.Wait();
-            _processEventsTask.Wait();
-            _transmitTask.Wait();
-        }
-
         private async Task<Byte[]> Exchange(Func<Task<Byte[]>> func, string message, CancellationToken cancellationToken)
         {
             if (func == null)
@@ -375,138 +506,6 @@ namespace ZWaveCore.Core
 
                 return ((ControllerFunctionMessage)response).Payload;
             }, $"{function} {(payload != null ? BitConverter.ToString(payload) : string.Empty)}", cancellationToken);
-        }
-
-        public Task<byte[]> Send(Function function, params byte[] payload)
-        {
-            return Send(function, CancellationToken.None, payload);
-        }
-
-        public Task<byte[]> Send(Function function, CancellationToken cancellationToken, params byte[] payload)
-        {
-            return Send(function, payload, (message) =>
-            {
-                return (message is ControllerFunctionCompleted && ((ControllerFunctionCompleted)message).Function == function);
-            }, cancellationToken);
-        }
-
-        public Task<byte[]> Send(Function function, byte[] payload, Func<byte[], bool> predicate)
-        {
-            return Send(function, payload, predicate, CancellationToken.None);
-        }
-
-        public Task<byte[]> Send(Function function, byte[] payload, Func<byte[], bool> predicate, CancellationToken cancellationToken)
-        {
-            return Send(function, payload, (message) =>
-            {
-                return (message is ControllerFunctionEvent) && predicate(((ControllerFunctionEvent)message).Payload);
-            }, cancellationToken);
-        }
-
-        public Task Send(byte nodeID, Command command)
-        {
-            return Send(nodeID, command, CancellationToken.None);
-        }
-
-        public Task Send(byte nodeID, Command command, CancellationToken cancellationToken)
-        {
-            if (nodeID == 0)
-                throw new ArgumentOutOfRangeException(nameof(nodeID), nodeID, "nodeID can not be 0");
-            if (command == null)
-                throw new ArgumentNullException(nameof(command));
-
-            return Exchange(async () =>
-            {
-                var request = new NodeCommand(nodeID, command);
-                _transmitQueue.Add(request);
-
-                await WaitForResponse((message) =>
-                {
-                    return (message is NodeCommandCompleted && ((NodeCommandCompleted)message).CallbackID == request.CallbackID);
-                }, cancellationToken).ConfigureAwait(false);
-
-                return null;
-            }, $"NodeID:{nodeID:D3}, Command:{command}", cancellationToken);
-        }
-
-        public Task<Byte[]> Send(byte nodeID, Command command, byte responseCommandID)
-        {
-            return Send(nodeID, command, responseCommandID, CancellationToken.None);
-        }
-
-        public Task<Byte[]> Send(byte nodeID, Command command, byte responseCommandID, CancellationToken cancellationToken)
-        {
-            return Send(nodeID, command, responseCommandID, null, cancellationToken);
-        }
-
-        public Task<Byte[]> Send(byte nodeID, Command command, byte responseCommandID, Func<byte[], bool> payloadValidation)
-        {
-            return Send(nodeID, command, responseCommandID, payloadValidation, CancellationToken.None);
-        }
-
-        public Task<Byte[]> Send(byte nodeID, Command command, byte responseCommandID, Func<byte[], bool> payloadValidation, CancellationToken cancellationToken)
-        {
-            if (nodeID == 0)
-                throw new ArgumentOutOfRangeException(nameof(nodeID), nodeID, "nodeID can not be 0");
-            if (command == null)
-                throw new ArgumentNullException(nameof(command));
-
-            return Exchange(async () =>
-            {
-                var completionSource = new TaskCompletionSource<Command>();
-
-                EventHandler<NodeEventArgs> onNodeEventReceived = (_, e) =>
-                {
-                    if (e.NodeID == nodeID && e.Command.ClassID == command.ClassID && e.Command.CommandID == responseCommandID)
-                    {
-                        if (payloadValidation == null || payloadValidation(e.Command.Payload))
-                        {
-                            // BugFix: 
-                            // http://stackoverflow.com/questions/19481964/calling-taskcompletionsource-setresult-in-a-non-blocking-manner
-                            Task.Run(() => completionSource.TrySetResult(e.Command));
-                        }
-                    }
-                };
-
-                var request = new NodeCommand(nodeID, command);
-                _transmitQueue.Add(request);
-
-                NodeEventReceived += onNodeEventReceived;
-                try
-                {
-                    await WaitForResponse((message) =>
-                    {
-                        return (message is NodeCommandCompleted && ((NodeCommandCompleted)message).CallbackID == request.CallbackID);
-                    }, cancellationToken).ConfigureAwait(false);
-
-                    try
-                    {
-                        using (var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-                        {
-                            cancellationTokenSource.CancelAfter(ResponseTimeout);
-                            cancellationTokenSource.Token.Register(() => completionSource.TrySetCanceled(), useSynchronizationContext: false);
-
-                            var response = await completionSource.Task.ConfigureAwait(false);
-                            return response.Payload;
-                        }
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        // Rethrow only if the external cancellation token was canceled.
-                        //
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            throw;
-                        }
-
-                        throw new TimeoutException();
-                    }
-                }
-                finally
-                {
-                    NodeEventReceived -= onNodeEventReceived;
-                }
-            }, $"NodeID:{nodeID:D3}, Command:[{command}], Reponse:{responseCommandID}", cancellationToken);
         }
     }
 }

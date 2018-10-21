@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ZWaveCore.Commands;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class NodeCommand : Message
     {

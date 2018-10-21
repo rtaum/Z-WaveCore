@@ -4,7 +4,7 @@ using ZWaveCore.Commands;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class NodeEvent : Message
     {

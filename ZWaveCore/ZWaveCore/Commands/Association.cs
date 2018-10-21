@@ -1,12 +1,12 @@
 ﻿using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ZWaveCore.Commands;
+using ZWaveCore.Core;
 using ZWaveCore.Enums;
 using ZWaveCore.Extensions;
 using ZWaveCore.Reports;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Commands
 {
     public class Association : CommandBase
     {

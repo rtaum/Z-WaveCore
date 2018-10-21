@@ -1,6 +1,6 @@
 ﻿using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class NodeCommandCompleted : Message
     {

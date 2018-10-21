@@ -1,7 +1,7 @@
 ﻿using System;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class UnknownMessage : Message
     {

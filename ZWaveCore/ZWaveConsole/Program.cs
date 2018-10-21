@@ -18,18 +18,27 @@ namespace ZWaveConsole
             try
             {
                 controller.Open();
-                var nodes = await controller.GetNodes();
-                foreach (var node in nodes)
-                {
-                    var protocolInfo = await node.GetProtocolInfo();
-                    var supportedClasses = await node.GetSupportedCommandClasses();
 
-                    var command = node.GetCommandClass<SwitchBinary>();
-                    //var report = await command.Get();
-                    //await command.Set(true);
-                    var report = await command.Get();
-                    var tempreture = report.Value;
-                }
+                var homeId = await controller.GetHomeID();
+                //var nodes = await controller.GetNodes();
+                //var multisensor = nodes.Skip(1).FirstOrDefault();
+                //var supportedClasses = await multisensor.GetSupportedCommandClasses();
+                //var command = multisensor.GetCommandClass<SensorMultiLevel>();
+                //command.Changed += Command_Changed;
+                //System.Threading.SpinWait.SpinUntil(() => false);
+
+
+                //foreach (var node in nodes)
+                //{
+                //    var protocolInfo = await node.GetProtocolInfo();
+                //    var supportedClasses = await node.GetSupportedCommandClasses();
+
+                //    var command = node.GetCommandClass<SwitchBinary>();
+                //    //var report = await command.Get();
+                //    //await command.Set(true);
+                //    var report = await command.Get();
+                //    var tempreture = report.Value;
+                //}
             }
             catch(Exception ex)
             {
@@ -40,6 +49,11 @@ namespace ZWaveConsole
                 controller.Close();
             }
 
+        }
+
+        private static void Command_Changed(object sender, ReportEventArgs<ZWaveCore.Reports.SensorMultiLevelReport> e)
+        {
+            throw new NotImplementedException();
         }
     }
 }

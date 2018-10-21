@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using ZWaveCore.Enums;
 
-namespace ZWaveCore.Core
+namespace ZWaveCore.Messages
 {
     class ControllerFunction : Message
     {

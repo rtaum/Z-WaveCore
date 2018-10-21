@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ZWaveCore.Core
 {
-    public class NodeCollection : IEnumerable<ZWaveNode>
+    public class ZWaveNodeCollection : IEnumerable<ZWaveNode>
     {
         private readonly List<ZWaveNode> _nodes = new List<ZWaveNode>();
 
