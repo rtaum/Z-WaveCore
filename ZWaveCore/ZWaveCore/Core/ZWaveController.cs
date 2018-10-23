@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ZWaveCore.Core.Events;
+using ZWaveCore.Core.EventArguments;
+using ZWaveCore.Core.EventsArgs;
 using ZWaveCore.Enums;
 
 namespace ZWaveCore.Core

@@ -20,7 +20,8 @@ namespace ZWaveCore.Commands
             GroupingsReport = 0x06
         }
 
-        public Association(ZWaveNode node) : base(node, CommandClass.Association)
+        public Association(ZWaveNode node) :
+            base(node, CommandClass.Association)
         {
         }
 

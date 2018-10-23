@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
 using ZWaveCore.Core;
-using ZWaveCore.Core.Events;
+using ZWaveCore.Core.EventsArgs;
 using ZWaveCore.Reports;
 
 namespace ZWaveConsole
@@ -20,15 +20,20 @@ namespace ZWaveConsole
             try
             {
                 controller.Open();
-                var nodes = await controller.GetNodes();
+                var nodes = (await controller.GetNodes()).Skip(1).Take(1);
                 foreach (var node in nodes)
                 {
                     var protocolInfo = await node.GetProtocolInfo();
                     var supportedClasses = await node.GetSupportedCommandClasses();
+                    var command = node.GetCommandClass<SensorMultiLevel>();
+                    var report = await command.GetSupportedSensors();
+                    var reports = report.SupportedSensorTypes;
 
-                    var command = node.GetCommandClass<SwitchBinary>();
-                    var report = await command.Get();
-                    await command.Set(true);
+                    var command1 = node.GetCommandClass<SensorBinary>();
+                    var a = await command1.Get();
+                    var command2 = node.GetCommandClass<ZWaveCore.Commands.Version>();
+                    var v = await command2.Get();
+                    var vv = command2.GetCommandClass(ZWaveCore.Enums.CommandClass.SwitchBinary);
                 }
             }
             catch(Exception ex)

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ZWaveCore.Core.Events
+namespace ZWaveCore.Core.EventArguments
 {
     public class ErrorEventArgs : EventArgs
     {

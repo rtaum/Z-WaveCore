@@ -1,6 +1,6 @@
 ﻿using ZWaveCore.Reports;
 
-namespace ZWaveCore.Core.Events
+namespace ZWaveCore.Core.EventsArgs
 {
     public class ReportEventArgs<T> where T : NodeReport
     {

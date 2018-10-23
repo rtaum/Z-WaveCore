@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
-using ZWaveCore.Core.Events;
+using ZWaveCore.Core.EventsArgs;
 using ZWaveCore.Enums;
 using ZWaveCore.Reports;
 using Version = ZWaveCore.Commands.Version;

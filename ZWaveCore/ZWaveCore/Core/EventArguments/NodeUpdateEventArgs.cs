@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ZWaveCore.Core.Events
+namespace ZWaveCore.Core.EventsArgs
 {
     public class NodeUpdateEventArgs : EventArgs
     {
