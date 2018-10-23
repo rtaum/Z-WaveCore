@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
 using ZWaveCore.Core;
+using ZWaveCore.Core.Events;
+using ZWaveCore.Reports;
 
 namespace ZWaveConsole
 {
@@ -40,7 +42,7 @@ namespace ZWaveConsole
 
         }
 
-        private static void Command_Changed(object sender, ReportEventArgs<ZWaveCore.Reports.SensorMultiLevelReport> e)
+        private static void Command_Changed(object sender, ReportEventArgs<SensorMultiLevelReport> e)
         {
             throw new NotImplementedException();
         }

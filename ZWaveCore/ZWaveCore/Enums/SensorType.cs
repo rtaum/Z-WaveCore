@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace ZWaveCore.Enums
+﻿namespace ZWaveCore.Enums
 {
     public enum SensorType : byte
     {
