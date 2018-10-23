@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Core;
+using ZWaveCore.Core.Events;
 using ZWaveCore.Enums;
 using ZWaveCore.Extensions;
 using ZWaveCore.Reports;

@@ -5,9 +5,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
+using ZWaveCore.Core.Events;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 using ZWaveCore.Messages;
+
+using ErrorEventArgs = ZWaveCore.Core.Events.ErrorEventArgs;
 
 namespace ZWaveCore.Core
 {

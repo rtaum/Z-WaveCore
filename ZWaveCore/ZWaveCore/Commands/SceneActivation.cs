@@ -1,5 +1,6 @@
 ﻿using System;
 using ZWaveCore.Core;
+using ZWaveCore.Core.Events;
 using ZWaveCore.Enums;
 using ZWaveCore.Reports;
 

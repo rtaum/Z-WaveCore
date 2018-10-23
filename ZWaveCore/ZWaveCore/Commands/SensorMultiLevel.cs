@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Core;
+using ZWaveCore.Core.Events;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 using ZWaveCore.Reports;
