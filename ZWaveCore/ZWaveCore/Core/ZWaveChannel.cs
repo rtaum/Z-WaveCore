@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ZWaveCore.Commands;
 using ZWaveCore.Core.EventsArgs;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
@@ -57,9 +56,12 @@ namespace ZWaveCore.Core
             _transmitQueue = new BlockingCollection<Message>();
             _responseQueue = new BlockingCollection<Message>();
 
-            _processEventsTask = new Task(() => ProcessQueue(_eventQueue, OnNodeMessageReceived));
-            _transmitTask = new Task(() => ProcessQueue(_transmitQueue, OnTransmit));
-            _portReadTask = new Task(() => ReadPort(Port));
+            _processEventsTask = new Task(() => ProcessQueue(_eventQueue, OnNodeMessageReceived),
+                TaskCreationOptions.LongRunning);
+            _transmitTask = new Task(() => ProcessQueue(_transmitQueue, OnTransmit),
+                TaskCreationOptions.LongRunning);
+            _portReadTask = new Task(() => ReadPort(Port),
+                TaskCreationOptions.LongRunning);
 
             // start tasks
             _portReadTask.Start();
@@ -210,6 +212,24 @@ namespace ZWaveCore.Core
                     NodeEventReceived -= onNodeEventReceived;
                 }
             }, $"NodeID:{nodeID:D3}, Command:[{command}], Reponse:{responseCommandID}", cancellationToken);
+        }
+
+        private Task<byte[]> Send(Function function, byte[] payload, Func<ControllerFunctionMessage, bool> predicate)
+        {
+            return Send(function, payload, predicate, CancellationToken.None);
+        }
+
+        private Task<byte[]> Send(Function function, byte[] payload, Func<ControllerFunctionMessage, bool> predicate, CancellationToken cancellationToken)
+        {
+            return Exchange(async () =>
+            {
+                var request = new ControllerFunction(function, payload);
+                _transmitQueue.Add(request);
+
+                var response = await WaitForResponse((message) => predicate((ControllerFunctionMessage)message), cancellationToken).ConfigureAwait(false);
+
+                return ((ControllerFunctionMessage)response).Payload;
+            }, $"{function} {(payload != null ? BitConverter.ToString(payload) : string.Empty)}", cancellationToken);
         }
 
         protected virtual void OnError(ErrorEventArgs e)
@@ -441,7 +461,7 @@ namespace ZWaveCore.Core
             throw new TaskCanceledException();
         }
 
-        private async Task<Byte[]> Exchange(Func<Task<Byte[]>> func, string message, CancellationToken cancellationToken)
+        private async Task<byte[]> Exchange(Func<Task<Byte[]>> func, string message, CancellationToken cancellationToken)
         {
             if (func == null)
                 throw new ArgumentNullException(nameof(func));
@@ -491,24 +511,6 @@ namespace ZWaveCore.Core
             }
 
             throw new TaskCanceledException();
-        }
-
-        private Task<byte[]> Send(Function function, byte[] payload, Func<ControllerFunctionMessage, bool> predicate)
-        {
-            return Send(function, payload, predicate, CancellationToken.None);
-        }
-
-        private Task<byte[]> Send(Function function, byte[] payload, Func<ControllerFunctionMessage, bool> predicate, CancellationToken cancellationToken)
-        {
-            return Exchange(async () =>
-            {
-                var request = new ControllerFunction(function, payload);
-                _transmitQueue.Add(request);
-
-                var response = await WaitForResponse((message) => predicate((ControllerFunctionMessage)message), cancellationToken).ConfigureAwait(false);
-
-                return ((ControllerFunctionMessage)response).Payload;
-            }, $"{function} {(payload != null ? BitConverter.ToString(payload) : string.Empty)}", cancellationToken);
         }
     }
 }

@@ -16,35 +16,39 @@ namespace ZWaveConsole
             var portName = ports.First();
 
             var channel = new ZWaveChannel(portName);
-            var controller = new ZWaveController(portName);
+            
             try
             {
-                controller.Open();
-                var nodes = (await controller.GetNodes()).Skip(1).Take(1);
-                foreach (var node in nodes)
+                using (var controller = new ZWaveController(portName))
                 {
-                    var protocolInfo = await node.GetProtocolInfo();
-                    var supportedClasses = await node.GetSupportedCommandClasses();
-                    var command = node.GetCommandClass<SensorMultiLevel>();
-                    var report = await command.GetSupportedSensors();
-                    var reports = report.SupportedSensorTypes;
-
-                    var command1 = node.GetCommandClass<SensorBinary>();
-                    var a = await command1.Get();
-                    var command2 = node.GetCommandClass<ZWaveCore.Commands.Version>();
-                    var v = await command2.Get();
-                    var vv = command2.GetCommandClass(ZWaveCore.Enums.CommandClass.SwitchBinary);
+                    controller.Open();
+                    await ExploreNodes(controller);
                 }
             }
             catch(Exception ex)
             {
                 var m = ex.Message;
             }
-            finally
-            {
-                controller.Close();
-            }
 
+        }
+
+        private static async Task ExploreNodes(ZWaveController controller)
+        {
+            var nodes = (await controller.GetNodes()).Skip(1).Take(1);
+            foreach (var node in nodes)
+            {
+                var protocolInfo = await node.GetProtocolInfo();
+                var supportedClasses = await node.GetSupportedCommandClasses();
+                var command = node.GetCommandClass<SensorMultiLevel>();
+                var report = await command.GetSupportedSensors();
+                var reports = report.SupportedSensorTypes;
+
+                var command1 = node.GetCommandClass<SensorBinary>();
+                var a = await command1.Get();
+                var command2 = node.GetCommandClass<ZWaveCore.Commands.Version>();
+                var v = await command2.Get();
+                var vv = command2.GetCommandClass(ZWaveCore.Enums.CommandClass.SwitchBinary);
+            }
         }
 
         private static void Command_Changed(object sender, ReportEventArgs<SensorMultiLevelReport> e)

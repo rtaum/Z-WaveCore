@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ZWaveCore.Commands;
 using ZWaveCore.Core;
 
 namespace ZWaveCore.Extensions

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using ZWaveCore.Commands;
+using ZWaveCore.Core;
 using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using ZWaveCore.Commands;
+using ZWaveCore.Core;
 using ZWaveCore.Enums;
 
 namespace ZWaveCore.Messages

@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Xunit;
-using ZWaveCore.Commands;
+using ZWaveCore.Core;
 using ZWaveCore.Enums;
 
 namespace ZWaveTest

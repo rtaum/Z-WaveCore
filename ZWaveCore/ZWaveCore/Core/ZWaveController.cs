@@ -10,7 +10,7 @@ using ZWaveCore.Enums;
 
 namespace ZWaveCore.Core
 {
-    public class ZWaveController
+    public class ZWaveController : IDisposable
     {
         private Task<ZWaveNodeCollection> _getNodes;
         private string _version;
@@ -98,7 +98,7 @@ namespace ZWaveCore.Core
             }
         }
 
-        public void Close()
+        private void Close()
         {
             Channel.Error -= Channel_Error;
             Channel.NodeEventReceived -= Channel_NodeEventReceived;
@@ -186,6 +186,11 @@ namespace ZWaveCore.Core
         public async Task<ZWaveNodeCollection> GetNodes(CancellationToken cancellationToken)
         {
             return await (_getNodes ?? (_getNodes = DiscoverNodes(cancellationToken)));
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
     }
 }
