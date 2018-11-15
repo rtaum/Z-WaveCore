@@ -3,7 +3,7 @@ using ZWaveCore.Enums;
 
 namespace ZWaveCore.Commands
 {
-    public class CommandBase : ICommand
+    public abstract class CommandBase : ICommand
     {
         public ZWaveNode Node { get; private set; }
 
@@ -17,7 +17,6 @@ namespace ZWaveCore.Commands
 
         public CommandBase()
         {
-
         }
 
         protected ZWaveChannel Channel

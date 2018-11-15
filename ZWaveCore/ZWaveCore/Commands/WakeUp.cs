@@ -28,7 +28,7 @@ namespace ZWaveCore.Commands
         }
 
         public Task<WakeUpIntervalReport> GetInterval()
-        {
+        {            
             return GetInterval(CancellationToken.None);
         }
 

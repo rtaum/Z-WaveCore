@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Commands;
 using ZWaveCore.Core;
@@ -10,48 +11,66 @@ namespace ZWaveConsole
 {
     class Program
     {
-        static async Task Main(string[] args)
+        static void Main(string[] args)
+        {
+            Task.Run(async () => await CreateControllerAsync());
+            Thread.Sleep(Timeout.Infinite);
+        }
+
+        private static async Task CreateControllerAsync()
         {
             var ports = System.IO.Ports.SerialPort.GetPortNames();
             var portName = ports.First();
 
             var channel = new ZWaveChannel(portName);
-            
+
             try
             {
                 using (var controller = new ZWaveController(portName))
                 {
                     controller.Open();
                     await ExploreNodes(controller);
+                    Console.WriteLine($"Started at {DateTime.Now.ToShortTimeString()}");
+                    Console.ReadLine();
+                    Console.WriteLine("Waiting is over");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 var m = ex.Message;
             }
-
         }
 
         private static async Task ExploreNodes(ZWaveController controller)
         {
-            var nodes = (await controller.GetNodes()).Skip(1).Take(1);
+            var allNodes = await controller.GetNodes();
+            var nodes = allNodes.Skip(1).Take(1);
             foreach (var node in nodes)
             {
                 var protocolInfo = await node.GetProtocolInfo();
                 var supportedClasses = await node.GetSupportedCommandClasses();
                 var command = node.GetCommandClass<SensorMultiLevel>();
-                var report = await command.GetSupportedSensors();
-                var reports = report.SupportedSensorTypes;
-
-                var command1 = node.GetCommandClass<SensorBinary>();
-                var a = await command1.Get();
-                var command2 = node.GetCommandClass<ZWaveCore.Commands.Version>();
-                var v = await command2.Get();
-                var vv = command2.GetCommandClass(ZWaveCore.Enums.CommandClass.SwitchBinary);
+                command.Changed += Command_Changed;
             }
         }
 
         private static void Command_Changed(object sender, ReportEventArgs<SensorMultiLevelReport> e)
+        {
+            Console.WriteLine($"Measured value of {e.Report.Type} is {e.Report.Value}");
+            Console.WriteLine($"Measured at {DateTime.Now.ToShortTimeString()}");
+        }
+
+        private static void Command1_Changed1(object sender, ReportEventArgs<SensorMultiLevelReport> e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void Command1_Changed(object sender, ReportEventArgs<MultiChannelReport> e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void Node_MessageReceived(object sender, EventArgs e)
         {
             throw new NotImplementedException();
         }

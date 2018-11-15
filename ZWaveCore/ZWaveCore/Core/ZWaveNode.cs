@@ -8,7 +8,6 @@ using ZWaveCore.Commands;
 using ZWaveCore.Core.EventsArgs;
 using ZWaveCore.Enums;
 using ZWaveCore.Reports;
-using Version = ZWaveCore.Commands.Version;
 
 namespace ZWaveCore.Core
 {
@@ -53,7 +52,7 @@ namespace ZWaveCore.Core
             _commandClasses.Add(new WakeUp(this));
             _commandClasses.Add(new Meter(this));
             _commandClasses.Add(new SwitchBinary(this));
-            _commandClasses.Add(new Version(this));
+            _commandClasses.Add(new ZWaveVersion(this));
             _commandClasses.Add(new Configuration(this));
             _commandClasses.Add(new Color(this));
             _commandClasses.Add(new MultiChannel(this));
@@ -93,7 +92,7 @@ namespace ZWaveCore.Core
                 return new VersionCommandClassReport[0];
             }
 
-            var version = GetCommandClass<Version>();
+            var version = GetCommandClass<ZWaveVersion>();
             var commandClassVersions = new Dictionary<CommandClass, VersionCommandClassReport>();
             foreach (var commandClass in Enum.GetValues(typeof(CommandClass)).Cast<CommandClass>())
             {
@@ -188,7 +187,7 @@ namespace ZWaveCore.Core
 
             // The version isn't cached, so we should bring it now.
             //
-            var version = GetCommandClass<Commands.Version>();
+            var version = GetCommandClass<ZWaveVersion>();
             var report = await version.GetCommandClass(commandClass, cancellationToken);
             lock (_commandClassVersions)
             {

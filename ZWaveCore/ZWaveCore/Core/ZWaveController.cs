@@ -54,58 +54,6 @@ namespace ZWaveCore.Core
             Channel.Open();
         }
 
-        private void Channel_Error(object sender, ErrorEventArgs e)
-        {
-            OnError(e);
-        }
-
-        private void Channel_Closed(object sender, EventArgs e)
-        {
-            OnChannelClosed(e);
-        }
-
-        private async void Channel_NodeEventReceived(object sender, NodeEventArgs e)
-        {
-            try
-            {
-                var nodes = await GetNodes();
-                var target = nodes[e.NodeID];
-                if (target != null)
-                {
-                    target.HandleEvent(e.Command);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError(new ErrorEventArgs(ex));
-            }
-        }
-
-        private async void Channel_NodeUpdateReceived(object sender, NodeUpdateEventArgs e)
-        {
-            try
-            {
-                var nodes = await GetNodes();
-                var target = nodes[e.NodeID];
-                if (target != null)
-                {
-                    target.HandleUpdate();
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError(new ErrorEventArgs(ex));
-            }
-        }
-
-        private void Close()
-        {
-            Channel.Error -= Channel_Error;
-            Channel.NodeEventReceived -= Channel_NodeEventReceived;
-            Channel.NodeUpdateReceived -= Channel_NodeUpdateReceived;
-            Channel.Close();
-        }
-
         public Task<string> GetVersion()
         {
             return GetVersion(CancellationToken.None);
@@ -191,6 +139,58 @@ namespace ZWaveCore.Core
         public void Dispose()
         {
             Close();
+        }
+
+        private void Channel_Error(object sender, ErrorEventArgs e)
+        {
+            OnError(e);
+        }
+
+        private void Channel_Closed(object sender, EventArgs e)
+        {
+            OnChannelClosed(e);
+        }
+
+        private async void Channel_NodeEventReceived(object sender, NodeEventArgs e)
+        {
+            try
+            {
+                var nodes = await GetNodes();
+                var target = nodes[e.NodeID];
+                if (target != null)
+                {
+                    target.HandleEvent(e.Command);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(new ErrorEventArgs(ex));
+            }
+        }
+
+        private async void Channel_NodeUpdateReceived(object sender, NodeUpdateEventArgs e)
+        {
+            try
+            {
+                var nodes = await GetNodes();
+                var target = nodes[e.NodeID];
+                if (target != null)
+                {
+                    target.HandleUpdate();
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(new ErrorEventArgs(ex));
+            }
+        }
+
+        private void Close()
+        {
+            Channel.Error -= Channel_Error;
+            Channel.NodeEventReceived -= Channel_NodeEventReceived;
+            Channel.NodeUpdateReceived -= Channel_NodeUpdateReceived;
+            Channel.Dispose();
         }
     }
 }
