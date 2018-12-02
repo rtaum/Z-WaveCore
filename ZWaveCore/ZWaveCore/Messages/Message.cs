@@ -124,6 +124,7 @@ namespace ZWaveCore.Messages
                         return new ControllerFunctionEvent(function, payload);
                     }
                 }
+
                 if (type == MessageType.Response)
                 {
                     if (function != Enums.Function.SendData)
@@ -131,6 +132,7 @@ namespace ZWaveCore.Messages
                         return new ControllerFunctionCompleted(function, payload);
                     }
                 }
+
                 return new UnknownMessage(header, type, function, payload);
             }
 
@@ -149,27 +151,29 @@ namespace ZWaveCore.Messages
 
         public bool Equals(Message other)
         {
-            if (Object.ReferenceEquals(other, null))
+            if (ReferenceEquals(other, null))
                 return false;
 
-            if (Object.ReferenceEquals(other, this))
+            if (ReferenceEquals(other, this))
                 return true;
 
             if (GetType() != other.GetType())
                 return false;
 
-            return object.Equals(Header, other.Header) && object.Equals(Type, other.Type) && object.Equals(Function, other.Function);
+            return Equals(Header, other.Header) &&
+                Equals(Type, other.Type) &&
+                Equals(Function, other.Function);
         }
 
         public static bool operator ==(Message a, Message b)
         {
-            if (Object.ReferenceEquals(a, b))
+            if (ReferenceEquals(a, b))
                 return true;
 
-            if (Object.ReferenceEquals(a, null) || Object.ReferenceEquals(b, null))
+            if (ReferenceEquals(a, null) || ReferenceEquals(b, null))
                 return false;
 
-            return object.Equals(a, b);
+            return Equals(a, b);
         }
 
         public static bool operator !=(Message a, Message b)
@@ -178,7 +182,7 @@ namespace ZWaveCore.Messages
         }
     }
 
-    static partial class Extensions
+    internal static class Extensions
     {
         public static async Task ReadAsyncExact(this Stream stream, byte[] buffer, int offset, int count)
         {

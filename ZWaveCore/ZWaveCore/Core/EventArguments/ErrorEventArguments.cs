@@ -2,11 +2,11 @@
 
 namespace ZWaveCore.Core.EventArguments
 {
-    public class ErrorEventArgs : EventArgs
+    public class ErrorEventArguments : EventArgs
     {
         public readonly Exception Error;
 
-        public ErrorEventArgs(Exception error)
+        public ErrorEventArguments(Exception error)
         {
             Error = error;
         }

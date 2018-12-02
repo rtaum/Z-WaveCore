@@ -1,7 +1,9 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ZWaveCore.Core.EventArguments;
@@ -10,29 +12,32 @@ using ZWaveCore.Core.Exceptions;
 using ZWaveCore.Enums;
 using ZWaveCore.Messages;
 
-using ErrorEventArgs = ZWaveCore.Core.EventArguments.ErrorEventArgs;
-
 namespace ZWaveCore.Core
 {
     public class ZWaveChannel : IDisposable
     {
+        private readonly ILogger _logger = null; // LogManager.GetCurrentClassLogger();
+
         private readonly SemaphoreSlim _semaphore;
+
         private Task _portReadTask;
         private Task _processEventsTask;
         private Task _processUpdatesTask;
         private Task _transmitTask;
+
         private BlockingCollection<NodeEvent> _eventQueue;
         private BlockingCollection<NodeUpdate> _updateQueue;
         private BlockingCollection<Message> _transmitQueue;
         private BlockingCollection<Message> _responseQueue;
 
         public readonly ISerialPort Port;
-        public TextWriter Log { get; set; }
+
         public TimeSpan ReceiveTimeout = TimeSpan.FromSeconds(2);
         public TimeSpan ResponseTimeout = TimeSpan.FromSeconds(5);
+
         public event EventHandler<NodeEventArgs> NodeEventReceived;
         public event EventHandler<NodeUpdateEventArgs> NodeUpdateReceived;
-        public event EventHandler<ErrorEventArgs> Error;
+        public event EventHandler<ErrorEventArguments> Error;
         public event EventHandler Closed;
 
         public int MaxRetryCount { get; set; } = 3;
@@ -43,77 +48,7 @@ namespace ZWaveCore.Core
                 throw new ArgumentNullException(nameof(port));
 
             _semaphore = new SemaphoreSlim(1, 1);
-            //port.OnDataReceivedHandler += PortDataReceived;
         }
-
-        //private async void PortDataReceived(object sender, DataReceivedEventArgs e)
-        //{
-        //    var port = sender as ISerialPort;
-        //    if (port == null)
-        //    {
-        //        throw new ArgumentException(nameof(sender));
-        //    }
-
-        //    try
-        //    {
-        //        // wait for message received (blocking)
-        //        var message = await Message.Read(port.InputStream).ConfigureAwait(false);
-        //        LogMessage($"Received: {message}");
-
-        //        // ignore ACK, no processing of ACK needed
-        //        if (message == Message.Acknowledge)
-        //            return;
-
-        //        // is it a eventmessage from a node?
-        //        if (message is NodeEvent)
-        //        {
-        //            // yes, so add to eventqueue
-        //            _eventQueue.Add(message);
-        //            // send ACK to controller
-        //            _transmitQueue.Add(Message.Acknowledge);
-        //            // we're done
-        //            return;
-        //        }
-
-        //        // is it a updatemessage from a node?
-        //        if (message is NodeUpdate)
-        //        {
-        //            // yes, so add to eventqueue
-        //            _eventQueue.Add(message);
-        //            // send ACK to controller
-        //            _transmitQueue.Add(Message.Acknowledge);
-        //            // we're done
-        //            return;
-        //        }
-
-        //        // not a event, so it's a response to a request
-        //        _responseQueue.Add(message);
-        //        // send ACK to controller
-        //        _transmitQueue.Add(Message.Acknowledge);
-        //    }
-        //    catch (ChecksumException ex)
-        //    {
-        //        LogMessage($"Exception: {ex}");
-        //        _transmitQueue.Add(Message.NegativeAcknowledge);
-        //    }
-        //    catch (UnknownFrameException ex)
-        //    {
-        //        // probably out of sync on the serial port
-        //        // ToDo: handle gracefully 
-        //        OnError(new ErrorEventArgs(ex));
-        //    }
-        //    catch (IOException)
-        //    {
-        //        // port closed, we're done so return
-        //        OnClosed(EventArgs.Empty);
-        //        return;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // just raise error event. don't break reading of serial port
-        //        OnError(new ErrorEventArgs(ex));
-        //    }
-        //}
 
         public ZWaveChannel(string portName)
              : this(new ZWaveSerialPort(portName))
@@ -142,6 +77,7 @@ namespace ZWaveCore.Core
             // start tasks
             _portReadTask.Start();
             _processEventsTask.Start();
+            _processUpdatesTask.Start();
             _transmitTask.Start();
         }
 
@@ -326,7 +262,7 @@ namespace ZWaveCore.Core
                     cancellationToken).ConfigureAwait(false);
 
                 return ((ControllerFunctionMessage)response).Payload;
-            }, $"{function} {(payload != null ? BitConverter.ToString(payload) : string.Empty)}", cancellationToken);
+            }, $"{function} {BitConverter.ToString(payload ?? new byte[0])}", cancellationToken);
         }
 
         private async Task<Message> WaitForResponse(Func<Message, bool> predicate, CancellationToken cancellationToken)
@@ -349,7 +285,7 @@ namespace ZWaveCore.Core
                     throw new NegativeAcknowledgeException();
                 if (result == Message.Cancel)
                     throw new CancelledResponseException();
-
+                
                 var commandResult = result as NodeCommandCompleted;
                 if (commandResult != null &&
                     commandResult.TransmissionState != TransmissionState.CompleteOk)
@@ -477,7 +413,7 @@ namespace ZWaveCore.Core
                 {
                     // probably out of sync on the serial port
                     // ToDo: handle gracefully 
-                    OnError(new ErrorEventArgs(ex));
+                    OnError(new ErrorEventArguments(ex));
                 }
                 catch (IOException)
                 {
@@ -488,7 +424,7 @@ namespace ZWaveCore.Core
                 catch (Exception ex)
                 {
                     // just raise error event. don't break reading of serial port
-                    OnError(new ErrorEventArgs(ex));
+                    OnError(new ErrorEventArguments(ex));
                 }
             }
         }
@@ -518,12 +454,16 @@ namespace ZWaveCore.Core
             }
         }
 
-        private void LogMessage(string message)
+        private void LogMessage(string message,
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerMemberName] string caller = null)
         {
-            if (message != null)
-            {
-                Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd H:mm:ss.fff")} {message}");
-            }
+            _logger?.Log(LogLevel.Debug, message);
+
+            //if (message != null)
+            //{
+            //    Console.WriteLine($"{DateTime.Now.ToString("yyyy-MM-dd H:mm:ss.fff")} {caller} line {lineNumber} {message}");
+            //}
         }
 
         private void HandleException(Exception ex)
@@ -536,6 +476,7 @@ namespace ZWaveCore.Core
                 }
                 return;
             }
+
             LogMessage(ex.ToString());
         }
 
@@ -592,7 +533,7 @@ namespace ZWaveCore.Core
             LogMessage($"Transmitted: {message}");
         }
 
-        protected virtual void OnError(ErrorEventArgs e)
+        protected virtual void OnError(ErrorEventArguments e)
         {
             LogMessage($"Exception: {e.Error}");
             Error?.Invoke(this, e);

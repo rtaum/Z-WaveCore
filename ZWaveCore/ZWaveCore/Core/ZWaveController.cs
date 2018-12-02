@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Collections;
 using System.Linq;
 using System.Text;
@@ -17,7 +18,7 @@ namespace ZWaveCore.Core
         private uint? _homeID;
         private byte? _nodeID;
         public readonly ZWaveChannel Channel;
-        public event EventHandler<ErrorEventArgs> Error;
+        public event EventHandler<ErrorEventArguments> Error;
         public event EventHandler ChannelClosed;
 
         private ZWaveController(ZWaveChannel channel)
@@ -35,7 +36,7 @@ namespace ZWaveCore.Core
         {
         }
 
-        protected virtual void OnError(ErrorEventArgs e)
+        protected virtual void OnError(ErrorEventArguments e)
         {
             Error?.Invoke(this, e);
         }
@@ -141,7 +142,7 @@ namespace ZWaveCore.Core
             Close();
         }
 
-        private void Channel_Error(object sender, ErrorEventArgs e)
+        private void Channel_Error(object sender, ErrorEventArguments e)
         {
             OnError(e);
         }
@@ -164,7 +165,7 @@ namespace ZWaveCore.Core
             }
             catch (Exception ex)
             {
-                OnError(new ErrorEventArgs(ex));
+                OnError(new ErrorEventArguments(ex));
             }
         }
 
@@ -181,7 +182,7 @@ namespace ZWaveCore.Core
             }
             catch (Exception ex)
             {
-                OnError(new ErrorEventArgs(ex));
+                OnError(new ErrorEventArguments(ex));
             }
         }
 

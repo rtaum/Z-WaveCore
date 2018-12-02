@@ -1,4 +1,6 @@
-﻿using System;
+﻿using NLog;
+using System;
+using System.IO.Ports;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +13,8 @@ namespace ZWaveConsole
 {
     class Program
     {
+        private static ILogger Logger = LogManager.GetCurrentClassLogger();
+
         static void Main(string[] args)
         {
             Task.Run(async () => await CreateControllerAsync());
@@ -19,7 +23,7 @@ namespace ZWaveConsole
 
         private static async Task CreateControllerAsync()
         {
-            var ports = System.IO.Ports.SerialPort.GetPortNames();
+            var ports = SerialPort.GetPortNames();
             var portName = ports.First();
 
             var channel = new ZWaveChannel(portName);
@@ -28,11 +32,19 @@ namespace ZWaveConsole
             {
                 using (var controller = new ZWaveController(portName))
                 {
-                    controller.Open();
-                    await ExploreNodes(controller);
-                    Console.WriteLine($"Started at {DateTime.Now.ToShortTimeString()}");
-                    Console.ReadLine();
-                    Console.WriteLine("Waiting is over");
+                    try
+                    {
+                        controller.Open();
+                        await ExploreNodes(controller);
+                        Console.WriteLine($"Started at {DateTime.Now.ToShortTimeString()}");
+                        Console.ReadLine();
+                        Console.WriteLine("Waiting is over");
+                    }
+                    catch (Exception ecc)
+                    {
+
+                        throw;
+                    }
                 }
             }
             catch (Exception ex)
@@ -47,6 +59,7 @@ namespace ZWaveConsole
             var nodes = allNodes.Skip(1).Take(1);
             foreach (var node in nodes)
             {
+                var neighbours = await node.GetNeighbours();
                 var protocolInfo = await node.GetProtocolInfo();
                 var supportedClasses = await node.GetSupportedCommandClasses();
                 var command = node.GetCommandClass<SensorMultiLevel>();
